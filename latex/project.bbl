@@ -1,0 +1,52 @@
+\begin{thebibliography}{7}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Abadi et~al.(2016)Abadi, Barham, Chen, Chen, Davis, Dean, Devin,
+  Ghemawat, Irving, Isard, et~al.]{abadi2016}
+M.~Abadi, P.~Barham, J.~Chen, Z.~Chen, A.~Davis, J.~Dean, M.~Devin,
+  S.~Ghemawat, G.~Irving, M.~Isard, et~al.
+\newblock Tensorflow: A system for large-scale machine learning.
+\newblock In \emph{12th $\{$USENIX$\}$ Symposium on Operating Systems Design
+  and Implementation ($\{$OSDI$\}$ 16)}, pages 265--283, 2016.
+
+\bibitem[Buuren and Groothuis-Oudshoorn(2010)]{buuren2010}
+S.~v. Buuren and K.~Groothuis-Oudshoorn.
+\newblock mice: Multivariate imputation by chained equations in r.
+\newblock \emph{Journal of statistical software}, pages 1--68, 2010.
+
+\bibitem[Chen and Guestrin(2016)]{chen2016}
+T.~Chen and C.~Guestrin.
+\newblock Xgboost: A scalable tree boosting system.
+\newblock In \emph{Proceedings of the 22nd acm sigkdd international conference
+  on knowledge discovery and data mining}, pages 785--794. ACM, 2016.
+
+\bibitem[Goodfellow et~al.(2016)Goodfellow, Bengio, and
+  Courville]{goodfellow2016}
+I.~Goodfellow, Y.~Bengio, and A.~Courville.
+\newblock \emph{Deep learning}.
+\newblock MIT press, 2016.
+
+\bibitem[Lundberg and Lee(2017)]{lundberg2017}
+S.~M. Lundberg and S.-I. Lee.
+\newblock A unified approach to interpreting model predictions.
+\newblock In \emph{Advances in Neural Information Processing Systems}, pages
+  4765--4774, 2017.
+
+\bibitem[Reshef et~al.(2011)Reshef, Reshef, Finucane, Grossman, McVean,
+  Turnbaugh, Lander, Mitzenmacher, and Sabeti]{reshef2011}
+D.~N. Reshef, Y.~A. Reshef, H.~K. Finucane, S.~R. Grossman, G.~McVean, P.~J.
+  Turnbaugh, E.~S. Lander, M.~Mitzenmacher, and P.~C. Sabeti.
+\newblock Detecting novel associations in large data sets.
+\newblock \emph{science}, 334\penalty0 (6062):\penalty0 1518--1524, 2011.
+
+\bibitem[Snoek et~al.(2012)Snoek, Larochelle, and Adams]{snoek2012}
+J.~Snoek, H.~Larochelle, and R.~P. Adams.
+\newblock Practical bayesian optimization of machine learning algorithms.
+\newblock In \emph{Advances in neural information processing systems}, pages
+  2951--2959, 2012.
+
+\end{thebibliography}

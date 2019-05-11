@@ -1,0 +1,282 @@
+\documentclass{beamer}
+%
+% Choose how your presentation looks.
+%
+% For more themes, color themes and font themes, see:
+% http://deic.uab.es/~iblanes/beamer_gallery/index_by_theme.html
+%
+\mode<presentation>
+{
+  \usetheme{PaloAlto}      % or try Darmstadt, Madrid, Warsaw, ...
+  \usecolortheme{beetle} % or try albatross, beaver, crane, ...
+  \usefonttheme{default}  % or try serif, structurebold, ...
+  \setbeamertemplate{navigation symbols}{}
+  \setbeamertemplate{caption}[numbered]
+} 
+
+\usepackage[english]{babel}
+\usepackage[utf8x]{inputenc}
+\usepackage{epstopdf}
+%\epstopdfsetup{outdir=../plot/}
+
+\usepackage{graphicx}
+%\graphicspath{{../plot/}}
+
+\usepackage{multirow}
+
+%\usepackage[demo]{graphicx}
+\usepackage{float}
+\usepackage{subcaption}
+\usepackage{booktabs}
+\usepackage{hanging}
+\usepackage{bm}
+\setbeamertemplate{footnote}{\hangpara{2em}{1}\makebox[2em][l]{\insertfootnotemark}\footnotesize\insertfootnotetext\par}
+
+\setbeamercovered{highly dynamic}
+
+\newcounter{saveenumi}
+\newcommand{\seti}{\setcounter{saveenumi}{\value{enumi}}}
+\newcommand{\conti}{\setcounter{enumi}{\value{saveenumi}}}
+
+\usepackage{amssymb}
+\usepackage{authblk}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{bm}
+
+\newcommand{\bx}{\mathbf{x}}
+\newcommand{\bu}{\mathbf{u}}
+\newcommand{\bz}{\mathbf{z}}
+\newcommand{\bA}{\mathbf{A}}
+\newcommand{\bX}{\mathbf{X}}
+\newcommand{\bbeta}{\bm{\beta}}
+\newcommand{\myeta}{\bm{\eta}}
+\newtheorem{conj}{Conjecture}
+\newtheorem{thm}{Theorem}
+\newtheorem{cor}{Corollary}
+
+\title[]{Travelers Data Science Competition 2019: Customer Retenion}
+\author{Aaron Palmer}
+%\date{12/05/2018}
+
+\begin{document}
+
+\begin{frame}
+  \maketitle
+  \centering{Aaron Palmer}
+\end{frame}
+
+%Uncomment these lines for an automatically generated outline.
+%\begin{frame}{Outline}
+%  \tableofcontents
+%\end{frame}
+
+\section{Introduction}
+\begin{frame}{Introduction: Challenge}
+Using historical policy data, create a retention model to predict those policies that are most likely to cancel as well as understand what variables are most influential in causing a policy cancellation.
+\begin{itemize}
+	\item The data set is based on 4 years of property insurance policies from 2013 - 2017 (in reality the data was simulated)
+	\item There are approximately 250,000 policies that were canceled during the effective term.
+	\item Goal: Build on train, predict on test
+	\item Objective measure: AUC
+\end{itemize}
+\end{frame}
+
+\section{Variables}
+\begin{frame}{Variables: Definition and Properties}
+\begin{table}[]
+\scalebox{.8}{
+\begin{tabular}{|l|l|}
+\hline
+Variable            & Variable Type            \\ \hline
+id                  & unique policy identifier \\ \hline
+claim               & categorical: nominal (2 levels)     \\ \hline
+gender              & categorical: nominal (2 levels)     \\ \hline
+marital status      & categorical: nominal (2 levels)     \\ \hline
+coverage type       & categorical: nominal (3 levels)     \\ \hline
+sales channel       & categorical: nominal (3 levels)    \\ \hline
+dwelling type       & categorical: nominal (4 levels)    \\ \hline
+house color         & categorical: nominal (4 levels)    \\ \hline
+state$^{\star}$     & categorical: nominal (6 levels)   \\ \hline
+credit              & categorical: ordinal (3 levels)    \\ \hline
+year                & positive integer         \\ \hline
+tenure              & positive integer         \\ \hline
+length at residence & positive integer         \\ \hline
+number of adults    & positive integer         \\ \hline
+number of children  & positive integer         \\ \hline
+age of policyholder & positive integer         \\ \hline
+premium             & positive real            \\ \hline
+\end{tabular}}
+\end{table}
+$^{\star}$ After converting zipcode to state
+\end{frame}
+
+\begin{frame}{Variables: Initial Concerns}
+\begin{itemize}
+	\item dwelling type contains a category ``Landlord" not present in training data
+	\item training data contains years 2013 - 2016, testing is only 2017
+	\item Errors in target of training data (value is $-1$ instead of $0$ or $1$)
+	\item Extreme values e.g. age
+	\item Missing values ($98.63\%$ of the data is complete)
+	\item Unbalanced classes (0: 253,097 vs 1: 792,026 in training)
+	\item Distribution similarity between train and test (besides year and dwelling type)
+\end{itemize}
+
+\end{frame}
+
+\section{Missing Data}
+\begin{frame}{Missing Data: Initial Look}
+\begin{figure}[H]
+    \centering
+    \begin{minipage}{.5\linewidth}
+        \centering
+        \includegraphics[width=0.6\linewidth]{train_missing.png}
+        \caption{Training Set}
+        \label{fig:train_miss}
+    \end{minipage}%
+    \begin{minipage}{0.5\linewidth}
+        \centering
+        \includegraphics[width=0.6\linewidth]{test_missing.png}
+        \caption{Testing Set}
+        \label{fig:test_miss}
+    \end{minipage}
+\end{figure}
+\end{frame}
+
+\begin{frame}{Possibilities}
+Many machine learning and statistical models require complete data, how do we address missingness?
+\begin{itemize}
+	\item Impute on combined test and train
+	\item Impute on on train and test separately
+	\item Delete all cases with missing in training, impute on testing
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Preparing for Multiple Imputation}
+Multiple imputation has certain requirements. As the data is simulated, we cannot be sure about missing mechanisms. However, missingness is present even in the test set. Perhaps missing at random (MAR) is a reasonable assumption.
+\begin{itemize}
+	\item Marginal sample data distributions from test set seem similar to train set
+	\item For age $\geq 110$ can either impute or hard code. We chose to impute. Need to be cognizant of censoring issues.
+	\item Any missing data must be set to ``NA" (this was not the case originally)
+	\item For dwelling type = "Landlord" either set as ``NA" and impute, or choose closest other category i.e. ``House''
+	\item Concatenate the training and testing set together, dropping the cancel and id variables 
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Multiple Imputation}
+Several packages are available for imputation, but we stick with the MICE package in R. After setting each variable's data type, MICE sets up the appropriate imputation model$^{\star}$:
+\begin{itemize}
+	\item Continuous variables: predictive mean matching
+	\item Binary variables: logistic regression
+	\item Nominal categorical variables: Bayesian polytomous regression (multinomial regression)
+	\item Ordinal categorical variables: proportional odds model
+\end{itemize}
+$^{\star}$ All variables were allowed to be predictors for each model (response, id absent)
+\textbf{Challenge:} Due to cluster time and resource limitations and data size, max iterations was estimated and set to 5 and sets imputed set to 3. Sets were imputed in parallel. (Max iterations restricted to 6 before timeout)
+\end{frame}
+
+\section{Modeling}
+\begin{frame}{Modeling: Multiple Data sets}
+With $m = 3$ imputed training and testing data sets, we are left with a big question on how to proceed.\\
+\textbf{Different Choices}
+\begin{itemize}
+	\item Model Averaging: multiples models on \textit{single} data sets and averaged
+	\item Multiple Model Averaging: multiple models on \textit{multiple} data sets and averaged
+	\item Model Stacking \& Multiple Model Stacking: predict on predictions -- \textit{very} important to make sure out-of-sample data is preserved
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Models:Neural Networks}
+\begin{itemize}
+	\item Black-box powerful function approximators capable of capturing complex relationships
+	\item Tuning these models can be tricky
+	\item Prone to over-fitting
+	\item Capable of modeling large datasets by using mini-batches for stochastic gradient descent
+\end{itemize}
+Best architecture contained 2 hidden layers, the first with 30 nodes, and the second with 5. Regularization was used, but didn't affect the model much. Score improvements were very slow.
+\end{frame}
+	
+
+\begin{frame}{Models: XGBoost}
+\begin{itemize}
+	\item XGBoost is a highly scalable ensemble learning method
+	\item Handles large data well
+	\item Often the `go to' for many data science competitions
+	\item Feature importance available
+	\item Randomized parameter search even using 2 fold cross validation was very expensive
+	\item Models were trained on each imputed data set
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{Models: Aggregation}
+\begin{itemize}
+\item By using multiple models it becomes harder to track feature importance. Since XGBoost was the main model used, each data set offered its own features.
+\item After each model was trained, predicting on its own test set, the predicted probabilities were averaged, i.e. $\hat{y}_i = \frac{1}{3}\sum\limits_{j=1}^{3} \hat{y}_{j,i}$ where $\hat{y}_{j,i}$ is the $j^{th}$ model for subject $i$.
+\end{itemize}
+\end{frame}
+
+\section{Feature Importance}
+\begin{frame}{Feature Importance: XGBoost}
+\begin{figure}
+  \includegraphics[width=\linewidth]{Feature_Importance.png}
+    \caption{Representative feature importance for each imputed data set}
+  \label{fig:impute}
+\end{figure}
+\textbf{Question:}\\
+How do the results inform model criticism? With variables `nkids' and `nadults' high up, perhaps feature engineering may help creating a new variable $kar = \frac{nkids}{nadults}$. This didn't help much.
+\end{frame}
+
+\begin{frame}{Receiver Operating Characteristic curve}
+\begin{figure}
+  \includegraphics[width=\linewidth]{ROC_1.png}
+    \caption{ROC with AUC}
+  \label{fig:roc}
+\end{figure}
+Here is the ROC plot for the test set associated with each imputed data sets. They are quite close, so it's difficult to tell any difference.
+\end{frame}
+
+\begin{frame}{Current Leaderboard}
+\begin{figure}
+  \includegraphics[width=\linewidth]{lb.png}
+    \caption{Public leader board as of 12pm, competition closes tonight}
+  \label{fig:lb}
+\end{figure}
+\end{frame}
+
+\section{Take-Away}
+\begin{frame}{Take-Away: The Problem}
+\begin{itemize}
+	\item Recall the task was measured with AUC.
+	\item Low training error did not necessarily correspond to low high due to class imbalance.
+	\item Modifying the models to take this into account increased error.
+	\item This task was largely a tuning problem, but brought to light important issues when attempting to merge statistical methodologies with machine learning models.
+\end{itemize}
+\end{frame}
+
+\section{Future Work}
+\begin{frame}{Future work}
+\begin{itemize}
+	\item Allow multiple imputation to run longer
+	\item Can we handle some of the data differently, i.e. how does encoding `Landlord' to `House' affect the model.
+	\item Can temporal information be better utilized?
+	\item Find better ways to combine models
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Reference}
+\begin{enumerate}
+\conti
+\item Buuren, S. van, and Karin Groothuis-Oudshoorn. ``mice: Multivariate imputation by chained equations in R." Journal of statistical software (2010): 1-68.
+\item Chen, Tianqi, and Carlos Guestrin. ``Xgboost: A scalable tree boosting system." Proceedings of the 22nd acm sigkdd international conference on knowledge discovery and data mining. ACM, 2016.
+\item Murphy, Kevin P. Machine learning: a probabilistic perspective. MIT press, 2012.
+
+\seti
+\end{enumerate}
+\end{frame}
+
+
+
+
+
+\end{document}
